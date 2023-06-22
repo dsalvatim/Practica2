@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
-  location = var.location_name
+  location = var.location
 }
 
 resource "azurerm_virtual_network" "vnet" {
@@ -34,14 +34,14 @@ resource "azurerm_linux_virtual_machine" "vm" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_F2"
-  admin_username      = "azureuser"
+  admin_username      = var.ssh_user
   network_interface_ids = [
     azurerm_network_interface.nic.id,
   ]
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = file(var.public_key_path)
   }
 
   os_disk {
