@@ -26,14 +26,22 @@ resource "azurerm_network_interface" "nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.pip_vm.id
   }
+}
+
+resource "azurerm_public_ip" "pip_vm" {
+  name                = "public-ip-vm"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  allocation_method   = "Dynamic"
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
   name                = "vm1"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_F2"
+  size                = "Standard_DS1_v2"
   admin_username      = var.ssh_user
   network_interface_ids = [
     azurerm_network_interface.nic.id,
@@ -64,5 +72,38 @@ resource "azurerm_linux_virtual_machine" "vm" {
   }
 }
 
+resource "azurerm_network_security_group" "nsg1" {
+  name                = "securitygroup"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  security_rule {
+    name                       = "httprule"
+    priority                   = 102
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8080"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+  security_rule {
+    name                       = "sshrule"
+    priority                   = 101
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg-link" {
+  subnet_id                 = azurerm_subnet.subnet.id
+  network_security_group_id = azurerm_network_security_group.nsg1.id
+}
 
 

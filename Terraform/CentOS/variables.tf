@@ -1,11 +1,23 @@
 variable "resource_group_name" {
-  default = "rg-createdbyTF"
+  default = "rg-David"
 }
 
 variable "location" {
   type = string
   description = "Región de Azure donde crearemos la infraestructura"
   default = "uksouth" 
+}
+
+variable "registry_name" {
+  type        = string
+  description = "Nombre del registry de imágenes de contenedor"
+  default     = "dsalvatim"
+}
+
+variable "registry_sku" {
+  type        = string
+  description = "Tipo de SKU a utilizar por el registry. Opciones válidas: Basic, Standard, Premium."
+  default     = "Basic"
 }
 
 variable "network_name" {
@@ -15,6 +27,11 @@ variable "network_name" {
 variable "subnet_name" {
   default = "subnet1"
 }
+
+variable "vm_count" {
+  default = 1
+}
+
 
 variable "public_key_path" {
   type = string
