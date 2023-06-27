@@ -38,7 +38,7 @@ resource "azurerm_public_ip" "pip_vm" {
 }
 
 resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "vm1"
+  name                = "VirtualMachineCentOS"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = "Standard_DS1_v2"

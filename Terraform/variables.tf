@@ -1,5 +1,5 @@
 variable "resource_group_name" {
-  default = "rg-David"
+  default = "ResourceGroup-David"
 }
 
 variable "location" {
@@ -11,7 +11,7 @@ variable "location" {
 variable "registry_name" {
   type        = string
   description = "Nombre del registry de imágenes de contenedor"
-  default     = "dsalvatim"
+  default     = "RegistroDavid"
 }
 
 variable "registry_sku" {
