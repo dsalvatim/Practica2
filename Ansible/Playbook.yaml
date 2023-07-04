@@ -16,10 +16,3 @@
           - openssl
         state: present
 
-    - name: Crear directorio webserver
-      file:
-        path: /home/user/webserver
-        state: directory
-        owner: user
-        group: user
-        mode: '0755'
