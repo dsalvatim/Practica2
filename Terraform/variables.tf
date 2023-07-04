@@ -11,7 +11,7 @@ variable "location" {
 variable "registry_name" {
   type        = string
   description = "Nombre del registry de imágenes de contenedor"
-  default     = "RegistroDavid"
+  default     = "registrodavid"
 }
 
 variable "registry_sku" {

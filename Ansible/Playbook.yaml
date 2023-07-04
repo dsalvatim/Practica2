@@ -1,0 +1,28 @@
+---
+- name: Instalar Podman, httpd-tools, openssl y crear el directorio webserver
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    ansible_host: 51.142.88.102
+
+  tasks:
+    - name: Actualizar los paquetes del sistema
+      apt:
+        update_cache: yes
+
+    - name: Instalar Podman, httpd-tools y openssl
+      apt:
+        name:
+          - podman
+          - httpd-tools
+          - openssl
+        state: present
+
+    - name: Crear directorio webserver
+      file:
+        path: /home/user/webserver
+        state: directory
+        owner: user
+        group: user
+        mode: '0755'
