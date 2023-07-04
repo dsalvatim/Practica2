@@ -1,18 +1,15 @@
 ---
-- name: Instalar Podman, httpd-tools, openssl y crear el directorio webserver
-  hosts: all
+- name: Conexión SSH y despliegue de herramientas
+  hosts: azure
+  gather_facts: true
   become: true
-  gather_facts: false
-  vars:
-    ansible_host: 51.142.88.102
-
   tasks:
-    - name: Actualizar los paquetes del sistema
-      apt:
-        update_cache: yes
+    - name: Conexión SSH a la máquina virtual
+      ansible.builtin.shell: ssh azureuser@192.168.1.5
+      delegate_to: localhost
 
     - name: Instalar Podman, httpd-tools y openssl
-      apt:
+      package:
         name:
           - podman
           - httpd-tools
