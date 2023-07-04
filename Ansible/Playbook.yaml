@@ -5,7 +5,7 @@
   become: true
   tasks:
     - name: Conexión SSH a la máquina virtual
-      ansible.builtin.shell: ssh azureuser@192.168.1.5
+      ansible.builtin.shell: ssh azureuser@51.142.88.102
       delegate_to: localhost
 
     - name: Instalar Podman, httpd-tools y openssl
