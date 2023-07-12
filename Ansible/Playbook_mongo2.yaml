@@ -1,0 +1,93 @@
+---
+# playbook
+
+- name: Instalación de una aplicación (MongoDB) con almacenamiento persistente sobre un cluster AKS
+  hosts: all
+  gather_facts: true
+  become: true
+
+  vars:
+    resource_group: "ResourceGroup-David"
+    aks_cluster: "MiClusterKubernetes"
+    registry_name: "registrodavid"
+    image_name: "mongo"
+    image_tag: "practica2"
+    deployment_name: "mongodb"
+    container_port: 8080
+
+  tasks:
+
+    - name: Traer imagen de MongoDB desde Docker Hub usando Podman
+      containers.podman.podman_image:
+        name: "{{ image_name }}"
+
+    - name: Añadir tag a la imagen
+      containers.podman.podman_tag:
+        image: "{{ image_name }}"
+        target_names: "{{ registry_name }}.azurecr.io/{{ image_name }}:{{ image_tag }}"
+
+    - name: Login al registry de Azure
+      containers.podman.podman_login:
+        registry: "{{ registry_name }}.azurecr.io"
+        username: registrodavid
+        password: "5iuy6gP/PtGbixfbKzfOo2kTT0oJRSkMIe2fR/H72a+ACRCl2frA"
+
+    - name: Realizar push de la imagen al registry
+      containers.podman.podman_image:
+        name: "{{ registry_name }}.azurecr.io/{{ image_name }}:{{ image_tag }}"
+        push: yes
+
+
+
+    - name: Crear Namespace
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Namespace
+        name: practica2
+        state: present
+        kubeconfig: '~/.kube/config'
+        
+
+    - name: Crear objeto de despliegue
+      kubernetes.core.k8s:
+        api_version: apps/v1
+        kind: Deployment
+        name: "{{ deployment_name }}"
+        namespace: practica2
+        definition:
+          metadata:
+            name: "{{ deployment_name }}"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: "{{ deployment_name }}"
+            template:
+              metadata:
+                labels:
+                  app: "{{ deployment_name }}"
+              spec:
+                containers:
+                  - name: "{{ deployment_name }}"
+                    image: "{{ registry_name }}.azurecr.io/{{ image_name }}:{{ image_tag }}"
+                    ports:
+                      - containerPort: "{{ container_port }}"
+
+    - name: Crear servicio
+      kubernetes.core.k8s:
+        api_version: v1
+        kind: Service
+        name: "{{ deployment_name }}-service"
+        namespace: practica2
+        definition:
+          metadata:
+            name: "{{ deployment_name }}-service"
+          spec:
+            type: LoadBalancer
+            ports:
+              - protocol: TCP
+                port: 80
+                targetPort: "{{ container_port }}"
+            selector:
+              app: "{{ deployment_name }}"
+

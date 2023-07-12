@@ -1,0 +1,70 @@
+---
+# playbook
+
+
+- name: Instalación de una aplicación (RedIS) con almacenamiento persistente sobre un cluster AKS
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+
+ 
+    
+    # CREACION DE LAS IMAGENES DE REDIS Y DE APP
+    
+    - name: Traer imagen de redis usando Podman
+      containers.podman.podman_image:
+        name: mcr.microsoft.com/oss/bitnami/redis:6.0.8
+
+    - name: Añadir tag a la imagen de redis
+      containers.podman.podman_tag:
+        image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
+        target_names: 
+          - registrodavid.azurecr.io/redis:casopractico2
+    
+    - name: Traer imagen de la app usando Podman
+      containers.podman.podman_image:
+        name: mcr.microsoft.com/azuredocs/azure-vote-front:v1
+
+    - name: Añadir tag a la imagen de app
+      containers.podman.podman_tag:
+        image: mcr.microsoft.com/azuredocs/azure-vote-front:v1
+        target_names: 
+          - registrodavid.azurecr.io/votefront:casopractico2
+
+
+
+    # SUBIDA AL REGISTRY DE AZURE DE LA IMAGEN DE REDIS Y DE APP 
+
+    - name: Login al registry
+      containers.podman.podman_login:
+        username: registrodavid
+        password: '5iuy6gP/PtGbixfbKzfOo2kTT0oJRSkMIe2fR/H72a+ACRCl2frA'
+        registry: registrodavid.azurecr.io
+
+    - name: Realizar push de la imagen de redis al registry
+      become: true
+      containers.podman.podman_image:
+        name: registrodavid.azurecr.io/redis:casopractico2
+        push: true
+
+    - name: Realizar push de la imagen de la app al registry
+      become: true
+      containers.podman.podman_image:
+        name: registrodavid.azurecr.io/votefront:casopractico2
+        push: true
+
+    - name: Create el namespace "unir"
+      kubernetes.core.k8s:
+        name: unir
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create el deployment y el servicio desde un fichero 
+      kubernetes.core.k8s:
+        state: present
+        src: app_redis.yaml
+
+    

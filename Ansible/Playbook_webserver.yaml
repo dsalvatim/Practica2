@@ -1,14 +1,15 @@
 ---
 # playbook
 
-- name: Instalar Podman en una máquina virtual CentOS en Azure
+- name: Despliegue de servidor web sobre un contenedor de Podman sobre máquina virtual de Azure
   hosts: all
   gather_facts: true
   become: true
  
-   # Tareas para instalar Podman en CentOS
-  tasks:  
-    - name: Instalar dependencias y paquetes necesarios
+  tasks:
+    # INSTALACIONES PREVIAS
+
+    - name: Instalacion de dependencias y herrarramientas necesarias para el despliegue
       yum:
         name: "{{ item }}"
         state: present
@@ -21,25 +22,27 @@
         - python3
         - python3-pip
 
-    - name: Instalacion Podman 
+    - name: Instalacion de Podman en el nodo gestionado
       yum:
         name: podman
         state: present
 
-    - name: Instalacion passlib para generación fichero de usuarios y pwds acceso webserver
+    - name: Instalacion de passlib mediante pip
       ansible.builtin.pip:
         name: passlib
         state: present
         executable: pip3
       become: true
 
-    - name: Crear directorio elementos de la imagen a contenerizar
+    # PREPARACION Y CREACION IMAGEN
+
+    - name: Crear directorio donde residiran los archivos para construir la imagen
       ansible.builtin.file:
         path: webserver
         state: directory
         mode: '0755'
     
-    - name: Crear archivo con credenciales acceso app web
+    - name: Crear archivo .creds con credenciales para acceder al servicio web
       community.general.htpasswd:
         path: webserver/.creds
         name: testuser
@@ -47,7 +50,7 @@
         crypt_scheme: bcrypt
         create: yes
 
-    # Hay que tener instalado el paquete community.crypto en nodo de control (# ansible-galaxy collection install community.general)
+    # Hay que asegurarse de tener instalado el paquete community.crypto en nodo de control (# ansible-galaxy collection install community.general)
     - name: Generar clave privada
       community.crypto.openssl_privatekey:
         path: webserver/localhost.key
@@ -72,7 +75,7 @@
         privatekey_path: webserver/localhost.key
         provider: selfsigned
 
-    - name: Copiar archivos del nodo de control a la maquina virtual
+    - name: Copiar archivos del nodo de control al directorio webserver de la máquina virtual 
       ansible.builtin.copy:
         src: "{{ item.src }}"
         dest: "webserver/{{ item.dest }}"
@@ -84,35 +87,40 @@
         - { src: "Containerfile", dest: "Containerfile" }
         - { src: ".htaccess", dest: ".htaccess" }
 
-# Hay que tener instalado el paquete containers.podman en nodo de control (# ansible-galaxy collection install containers.podman)
+# Hay que asegurarse de tener instalado el paquete containers.podman en nodo de control (# ansible-galaxy collection install containers.podman)
 
-    - name: Generamos la imagen del conteneder
+    - name: Construir la imagen del webserver a partir de todos los ficheros anteriores
       containers.podman.podman_image:
         name: webserver
         path: webserver
 
-    - name: Etiquetamos la imagen
+    - name: Añadir la etiqueta casopractico2 a la imagen
       containers.podman.podman_tag:
         image: localhost/webserver:latest
         target_names: 
           - registrodavid.azurecr.io/webserver:casopractico2
 
+    # SUBIDA AL REGISTRY DE AZURE
+
     - name: Login al registry
       containers.podman.podman_login:
         username: registrodavid
-        password: '872ou+/mPTKoUbwXRhNUo2THqFbYy+KCSYIitbrqMF+ACRBWRnuJ'
+        password: '5iuy6gP/PtGbixfbKzfOo2kTT0oJRSkMIe2fR/H72a+ACRCl2frA'
         registry: registrodavid.azurecr.io/webserver
 
-    - name: Realizar push de la imagen al registry
+    - name: Realizar el push de la imagen al registry
       become: true
       containers.podman.podman_image:
         name: registrodavid.azurecr.io/webserver:casopractico2
         push: true
 
-    - name: Crear contenedor desde el registro
+    # CREACION DEL CONTENEDOR
+
+    - name: Crear contenedor a partir de la imagen del registry
       containers.podman.podman_container:
         name: web
         image: registrodavid.azurecr.io/webserver:casopractico2
         ports:
           - "8080:443"
+
       

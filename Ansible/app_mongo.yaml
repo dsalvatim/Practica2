@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-mongodb
+  namespace: mongo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azure-mongodb
+  template:
+    metadata:
+      labels:
+        app: azure-mongodb
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: azure-mongodb
+        image: registrodavid.azurecr.io/mongo:casopractico2
+        env:
+        - name: ALLOW_EMPTY_PASSWORD
+          value: "yes"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 800m
+            memory: 2Gi
+        ports:
+        - containerPort: 27017
+          name: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-mongodb
+  namespace: mongo
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 27017
+  selector:
+    app: azure-mongodb
+
+
