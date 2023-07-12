@@ -1,0 +1,118 @@
+---
+# playbook
+
+- name: Instalar Podman en una máquina virtual CentOS en Azure
+  hosts: all
+  gather_facts: true
+  become: true
+ 
+   # Tareas para instalar Podman en CentOS
+  tasks:  
+    - name: Instalar dependencias y paquetes necesarios
+      yum:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - yum-utils
+        - device-mapper-persistent-data
+        - lvm2
+        - httpd-tools
+        - openssl
+        - python3
+        - python3-pip
+
+    - name: Instalacion Podman 
+      yum:
+        name: podman
+        state: present
+
+    - name: Instalacion passlib para generacion fichero de usuarios y pwds acceso webserver
+      ansible.builtin.pip:
+        name: passlib
+        state: present
+        executable: pip3
+      become: true
+
+    - name: Crear directorio elementos de la imagen a contenerizar
+      ansible.builtin.file:
+        path: webserver
+        state: directory
+        mode: '0755'
+    
+    - name: Crear archivo con credenciales acceso app web
+      community.general.htpasswd:
+        path: webserver/.creds
+        name: testuser
+        password: lotuslotus
+        crypt_scheme: bcrypt
+        create: yes
+
+    # Hay que tener instalado el paquete community.crypto en nodo de control (# ansible-galaxy collection install community.general)
+    - name: Generar clave privada
+      community.crypto.openssl_privatekey:
+        path: webserver/localhost.key
+        type: RSA
+        size: 2048
+
+    - name: Generar solicitud de certificado
+      community.crypto.openssl_csr:
+        privatekey_path: webserver/localhost.key
+        path: webserver/localhost.csr
+        common_name: vm1
+        country_name: ES
+        state_or_province_name: Madrid
+        locality_name: Madrid
+        organization_name: DevOps
+        organizational_unit_name: Ejemplo
+
+    - name: Firmar solicitud de certificado
+      community.crypto.x509_certificate:
+        path: webserver/localhost.crt
+        csr_path: webserver/localhost.csr
+        privatekey_path: webserver/localhost.key
+        provider: selfsigned
+
+    - name: Copiar archivos del nodo de control a la maquina virtual
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "webserver/{{ item.dest }}"
+        mode: '0644'
+        remote_src: false
+      with_items:
+        - { src: "index.html", dest: "index.html" }
+        - { src: "httpd.conf", dest: "httpd.conf" }
+        - { src: "Containerfile", dest: "Containerfile" }
+        - { src: ".htaccess", dest: ".htaccess" }
+
+# Hay que tener instalado el paquete containers.podman en nodo de control (# ansible-galaxy collection install containers.podman)
+
+    - name: Generamos la imagen del conteneder
+      containers.podman.podman_image:
+        name: webserver
+        path: webserver
+
+    - name: Etiquetamos la imagen
+      containers.podman.podman_tag:
+        image: localhost/webserver:latest
+        target_names: 
+          - registrodavid.azurecr.io/webserver:casopractico2
+
+    - name: Login al registry
+      containers.podman.podman_login:
+        username: registrodavid
+        password: '872ou+/mPTKoUbwXRhNUo2THqFbYy+KCSYIitbrqMF+ACRBWRnuJ'
+        registry: registrodavid.azurecr.io/webserver
+
+    - name: Realizar push de la imagen al registry
+      become: true
+      containers.podman.podman_image:
+        name: registrodavid.azurecr.io/webserver:casopractico2
+        push: true
+
+    - name: Crear contenedor desde el registro
+      containers.podman.podman_container:
+        name: web
+        image: registrodavid.azurecr.io/webserver:casopractico2
+        ports:
+          - "8080:443"
+      
