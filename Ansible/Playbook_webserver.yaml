@@ -123,4 +123,10 @@
         ports:
           - "8080:443"
 
+    - name: Generar como servicio del SO
+      ansible.builtin.systemd:
+        name: web.service
+        state: started
+        enabled: true
+
       
