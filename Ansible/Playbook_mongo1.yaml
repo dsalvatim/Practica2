@@ -1,8 +1,6 @@
 ---
 # playbook
 
-
-
 - name: Instalación de una aplicación (MongoDB) con almacenamiento persistente sobre un cluster AKS
   hosts: all
   gather_facts: true

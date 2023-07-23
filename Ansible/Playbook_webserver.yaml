@@ -50,7 +50,7 @@
         crypt_scheme: bcrypt
         create: yes
 
-    # Hay que asegurarse de tener instalado el paquete community.crypto en nodo de control (# ansible-galaxy collection install community.general)
+    # Hay que asegurarse de tener instalado el paquete community.crypto en nodo de control (#ansible-galaxy collection install community.general)
     - name: Generar clave privada
       community.crypto.openssl_privatekey:
         path: webserver/localhost.key

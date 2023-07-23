@@ -17,7 +17,7 @@
 
   tasks:
 
-    - name: Traer imagen de MongoDB desde Docker Hub usando Podman
+    - name: Traer imagen de MongoDB desde Docker Hub usando  Podman
       containers.podman.podman_image:
         name: "{{ image_name }}"
 
