@@ -35,7 +35,7 @@
 
 
 
-    # SUBIDA AL REGISTRY DE AZURE DE LA IMAGEN DE REDIS Y DE APP 
+    # SUBIDA AL REGISTRY DE AZURE DE LA IMAGEN DE REDIS Y DE LA APP
 
     - name: Login al registry
       containers.podman.podman_login:
